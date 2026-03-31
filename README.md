@@ -1,49 +1,33 @@
-# Starlight Starter Kit: Basics
+# Antigravity コンテキスト管理 完全ガイド
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+Antigravity IDEのコンテキスト管理機能を体系的に学ぶための学習資料サイトです。  
+[Starlight](https://starlight.astro.build/)（Astro）で構築されています。
 
-```
-bun create astro@latest -- --template starlight
-```
+## 📖 目次
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+| 章 | テーマ | 内容 |
+|---|---|---|
+| 第1章 | **全体像** | コンテキストの概念と7層アーキテクチャの俯瞰 |
+| 第2章 | **Rules** | GEMINI.md の3階層ルールシステムと効果的な記述方法 |
+| 第3章 | **Skills** | 5つのスキルパターンと Progressive Disclosure |
+| 第4章 | **Knowledge Items** | Antigravity固有の永続記憶・自動学習メカニズム |
+| 第5章 | **Artifacts** | Planning Modeの5段階ワークフローと3つの主要Artifact |
+| 第6章 | **Workflows & MCP** | スラッシュコマンドとModel Context Protocol |
+| 第7章 | **最適化** | Compaction・ベストプラクティス総まとめ |
 
-## 🚀 Project Structure
+各章には **Cursor / Claude Code** との比較も含まれています。
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+## 🧞 コマンド
 
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
-```
+| コマンド | 説明 |
+|:--|:--|
+| `bun install` | 依存関係のインストール |
+| `bun dev` | ローカル開発サーバー起動（`localhost:4321`） |
+| `bun build` | 本番用ビルド（`./dist/`） |
+| `bun preview` | ビルド結果のローカルプレビュー |
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+## 🛠 技術スタック
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
-
-Static assets, like favicons, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `bun install`             | Installs dependencies                            |
-| `bun dev`             | Starts local dev server at `localhost:4321`      |
-| `bun build`           | Build your production site to `./dist/`          |
-| `bun preview`         | Preview your build locally, before deploying     |
-| `bun astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `bun astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+- [Astro](https://astro.build/) v6
+- [Starlight](https://starlight.astro.build/) v0.38
+- [Bun](https://bun.sh/) — パッケージマネージャ & ランタイム
