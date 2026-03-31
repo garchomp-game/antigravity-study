@@ -1,40 +1,39 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: Antigravity コンテキスト管理 完全ガイド
+description: Antigravity IDEのコンテキスト管理機能を体系的に理解するための学習資料。Rules, Skills, Knowledge Items, Artifacts, Workflows, MCP, Compaction の7層構造を網羅。
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: Rules・Skills・Knowledge Items・Artifacts・Workflows・MCP・Compaction — Antigravityの7つのコンテキスト管理レイヤーを体系的に学ぶ
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: 第1章から読む
+      link: /01-overview/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
-      variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## 目次
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+<CardGrid>
+    <Card title="第1章：全体像" icon="open-book">
+        AIコーディングにおけるコンテキストの概念と、Antigravityの7層アーキテクチャの全体像を把握する。
+    </Card>
+    <Card title="第2章：Rules" icon="pencil">
+        GEMINI.md による3階層ルールシステムの仕組みと効果的な記述方法。Cursor / Claude Code との比較付き。
+    </Card>
+    <Card title="第3章：Skills" icon="puzzle">
+        Progressive Disclosure に基づく5つのスキルパターンと、Plugins との関係を理解する。
+    </Card>
+    <Card title="第4章：Knowledge Items" icon="random">
+        Antigravity固有の永続記憶システム。自動学習の仕組みと、セッションを超えた知識の活用。
+    </Card>
+    <Card title="第5章：Artifacts" icon="document">
+        Implementation Plan / Task / Walkthrough の3つの主要Artifactと、Planning Modeのワークフロー。
+    </Card>
+    <Card title="第6章：Workflows & MCP" icon="setting">
+        スラッシュコマンド Workflows と、外部ツール接続の標準プロトコル MCP の使い方。
+    </Card>
+    <Card title="第7章：最適化" icon="approve-check">
+        Compaction の仕組みと、コンテキスト管理のベストプラクティス総まとめ。
+    </Card>
 </CardGrid>

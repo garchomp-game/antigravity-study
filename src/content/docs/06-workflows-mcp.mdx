@@ -1,0 +1,224 @@
+---
+title: "Workflows & MCP — 自動化と外部接続"
+description: AntigravityのWorkflowsシステムとModel Context Protocol（MCP）による外部ツール統合を理解する。
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Workflows とは
+
+**Workflows（ワークフロー）**は、スラッシュコマンド（`/command-name`）で呼び出せる**再利用可能な手順書**です。
+
+Rules が「常に適用される制約」、Skills が「必要時にロードされる知識」であるのに対し、Workflows は「**明示的に呼び出す定型手順**」です。
+
+```
+ユーザー: /deploy
+  → .agents/workflows/deploy.md が読み込まれる
+  → エージェントがその手順に従って実行
+```
+
+## Workflow ファイルの構造
+
+Workflowsは `.agents/workflows/`（または `_agents/workflows/`）ディレクトリに配置します：
+
+```
+.agents/
+└── workflows/
+    ├── deploy.md
+    ├── test-all.md
+    ├── create-component.md
+    └── release.md
+```
+
+各ファイルのフォーマット：
+
+```markdown
+---
+description: アプリケーションをステージング環境にデプロイする
+---
+
+## 前提条件
+- 全テストがパスしていること
+- main ブランチにマージ済みであること
+
+## 手順
+
+1. ビルドを実行する
+   \`\`\`bash
+   bun run build
+   \`\`\`
+
+2. テストを実行して全パスを確認する
+   \`\`\`bash
+   bun run test
+   \`\`\`
+
+// turbo
+3. ステージング環境にデプロイする
+   \`\`\`bash
+   bun run deploy:staging
+   \`\`\`
+
+4. デプロイ結果を確認し、ユーザーに報告する
+```
+
+### YAMLフロントマター
+
+| フィールド | 説明 |
+|---|---|
+| `description` | ワークフローの簡潔な説明。一覧表示やヘルプで使用 |
+
+## Turbo アノテーション
+
+Workflowsには**自動実行**を制御する特別なアノテーションがあります：
+
+### `// turbo`（個別ステップ）
+
+**直後のステップだけ**を自動実行（ユーザー承認なし）します。
+
+```markdown
+1. テスト実行（通常 → ユーザー承認が必要）
+
+// turbo
+2. Lintチェック（turbo → 自動実行）
+
+3. ビルド（通常 → ユーザー承認が必要）
+```
+
+### `// turbo-all`（全ステップ）
+
+ファイル内のどこかに記述すると、**すべてのステップ**がユーザー承認なしで自動実行されます。
+
+```markdown
+---
+description: 全自動テスト＆リントパイプライン
+---
+
+// turbo-all
+
+1. 依存関係のインストール
+2. Lint実行
+3. テスト実行
+4. ビルド確認
+```
+
+<Aside type="caution">
+`// turbo-all` は**安全なワークフローのみ**に使用してください。デプロイやデータ変更を含むワークフローには、手動承認ステップを残すべきです。
+</Aside>
+
+## Workflows の活用例
+
+| ワークフロー | 説明 | 推奨トリガー |
+|---|---|---|
+| `/test` | 全テスト実行 + カバレッジレポート | `// turbo-all` |
+| `/lint-fix` | Lint警告の自動修正 | `// turbo-all` |
+| `/create-component` | コンポーネントテンプレート生成 | 個別turbo |
+| `/deploy` | ステージング/本番デプロイ | turboなし（手動承認） |
+| `/release` | バージョンバンプ + タグ + CHANGELOGメンテ | 部分turbo |
+| `/security-audit` | 依存関係のセキュリティ監査 | `// turbo-all` |
+
+---
+
+## MCP（Model Context Protocol）とは
+
+**MCP（Model Context Protocol）**は、AIモデルが外部のツール、データベース、サービスに安全に接続するための**オープン標準**です。
+
+よく「AIのUSB-C」に例えられます。個別のカスタム統合を作る代わりに、標準化されたプロトコルで任意のサービスに接続できます。
+
+```
+┌─────────────┐     MCP      ┌──────────────┐
+│  Antigravity │ ◄──────────► │ External Tool│
+│  (AIエージェント) │    標準プロトコル  │ (DB, API, etc)│
+└─────────────┘              └──────────────┘
+```
+
+## MCP の設定
+
+AntigravityのMCP設定は `mcp_config.json` で管理します：
+
+```
+~/.gemini/antigravity/mcp_config.json
+```
+
+設定例：
+
+```json
+{
+  "servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-fs", "/home/user/data"]
+    },
+    "database": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-postgres"],
+      "env": {
+        "DATABASE_URL": "postgresql://..."
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-github"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_..."
+      }
+    }
+  }
+}
+```
+
+## MCP vs Skills：補完関係
+
+| 観点 | Skills | MCP |
+|---|---|---|
+| **目的** | 内部知識の提供 | 外部ツールの実行 |
+| **データ** | テキスト（指示・例） | リアルタイムデータ |
+| **レイテンシ** | ≈0ms（ローカルファイル） | ネットワーク依存 |
+| **実行** | エージェントが解釈・実行 | ツールサーバーが実行 |
+| **例** | 「APIの書き方はこうです」 | 「このSQLを実行してデータを取得」 |
+
+<Aside type="tip">
+Skillsは**内部の知恵**（How-to）、MCPは**外部の手足**（Action）と考えると整理しやすいです。多くの場合、SkillsとMCPは組み合わせて使います。例：「Skill: DBマイグレーション手順 + MCP: PostgreSQLサーバー」
+</Aside>
+
+## 代表的な MCP サーバー
+
+| MCPサーバー | 用途 |
+|---|---|
+| `mcp-server-postgres` | PostgreSQLへの接続・クエリ実行 |
+| `mcp-server-sqlite` | SQLiteデータベース操作 |
+| `@anthropic/mcp-fs` | ファイルシステム操作 |
+| `@anthropic/mcp-github` | GitHub API操作（Issue, PR等） |
+| `mcp-server-slack` | Slack通知・メッセージ送信 |
+| `mcp-server-google-drive` | Google Driveファイル操作 |
+
+## 他ツールとの比較
+
+<Tabs>
+  <TabItem label="Antigravity">
+    **Workflows + MCP**
+    - `.agents/workflows/*.md` でスラッシュコマンド定義
+    - `mcp_config.json` で外部ツール接続
+    - turbo アノテーションで自動実行制御
+  </TabItem>
+  <TabItem label="Cursor">
+    **MCP のみ**
+    - MCP対応あり（設定画面 or `cursor/mcp.json`）
+    - スラッシュコマンドのWorkflows機能はなし
+    - `@` コマンドで手動コンテキスト管理
+  </TabItem>
+  <TabItem label="Claude Code">
+    **Custom Commands + MCP**
+    - `.claude/commands/*.md` でスラッシュコマンド定義
+    - MCP対応あり（`claude mcp add` コマンドで設定）
+    - turbo に相当する機能はなし（`--dangerously-skip-permissions`あり）
+  </TabItem>
+</Tabs>
+
+## この章のまとめ
+
+- Workflows はスラッシュコマンドで呼び出す再利用可能な手順書
+- `// turbo` と `// turbo-all` で自動実行を制御できる
+- MCP は外部ツール接続の標準プロトコル（「AIのUSB-C」）
+- Skills（内部知識）と MCP（外部ツール）は補完関係
+- `mcp_config.json` で MCP サーバーを設定

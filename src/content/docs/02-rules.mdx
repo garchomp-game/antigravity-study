@@ -1,0 +1,201 @@
+---
+title: "Rules — AIの振る舞いを定義する"
+description: Antigravityのルールシステム（GEMINI.md）を理解し、エージェントの動作を効果的にカスタマイズする方法を学ぶ。
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Rules とは
+
+**Rules（ルール）**は、Antigravityのエージェントに対する**常時適用される指示**です。すべての会話で自動的に読み込まれ、エージェントの振る舞いの基盤を形成します。
+
+ルールの役割：
+- コーディングスタイルの統一（例：「TypeScriptを使用する」「関数型プログラミングを優先する」）
+- アーキテクチャパターンの指定（例：「Repositoryパターンを使用する」）
+- 禁止事項の明示（例：「classコンポーネントを使わない」）
+- プロジェクト固有の文脈の提供（例：技術スタック、ディレクトリ構造）
+
+## 3つの適用レベル
+
+Rulesはファイルシステム上の配置場所によって、3つのスコープを持ちます：
+
+### 1. グローバルルール
+
+```
+~/.gemini/GEMINI.md
+```
+
+- **すべてのプロジェクト**に共通で適用される
+- 個人の好み・スタイルを記述するのに最適
+- 例：使用言語、レスポンスの形式、一般的なコーディング規約
+
+### 2. プロジェクトルール
+
+```
+./GEMINI.md          （リポジトリルート）
+```
+
+- **そのリポジトリ内**のすべの会話に適用される
+- 技術スタック、アーキテクチャ、テスト方針を記述
+- チームで共有可能（Gitにコミットできる）
+
+### 3. ディレクトリルール
+
+```
+./src/components/GEMINI.md
+./src/api/GEMINI.md
+```
+
+- **特定のディレクトリ配下**でのみ適用される
+- モジュール固有の規約やパターンを記述
+- 上位ルールを上書き・補足できる
+
+<Aside type="note">
+ルールの優先度は **サブディレクトリ > プロジェクトルート > グローバル** です。より具体的な（深い階層の）ルールが優先されます。
+</Aside>
+
+## 優先度の階層構造
+
+```
+優先度: 高
+  ↑  ./src/components/GEMINI.md  （最も具体的）
+  │  ./src/GEMINI.md
+  │  ./GEMINI.md                  （プロジェクトルート）
+  ↓  ~/.gemini/GEMINI.md          （グローバル）
+優先度: 低
+```
+
+この階層設計により、プロジェクト全体のルールを設定しつつ、特定のモジュールでは異なるパターンを許容できます。
+
+例えば：
+- プロジェクトルート：「Reactを使用」「Vitestでテスト」
+- `src/api/`：「ここではExpressのルーティングパターンに従う」
+- `src/components/`：「すべてのコンポーネントにStoryを作成する」
+
+## 効果的なルールの書き方
+
+### 原則1：否定制約（Negative Constraints）を活用する
+
+AIに「何をすべきか」よりも「**何をすべきでないか**」を伝える方が効果的な場合が多いです。
+
+```markdown
+## やるべきこと ✅
+- TypeScriptの strict mode を有効にする
+- エラーハンドリングには Result 型を使用する
+
+## やってはいけないこと ❌
+- any 型を絶対に使わない
+- console.log をデバッグ以外で残さない
+- 外部依存ライブラリを勝手に追加しない
+- class コンポーネントを使わない（関数コンポーネントのみ）
+```
+
+### 原則2：具体的な例を含める
+
+抽象的な指示よりも、実際のコード例が圧倒的に効果的です。
+
+```markdown
+## APIルートのパターン
+
+以下のパターンに従ってAPIルートを書くこと：
+
+\`\`\`typescript
+// ✅ 正しいパターン
+export async function GET(request: Request) {
+  const data = await service.findAll();
+  return Response.json({ data });
+}
+
+// ❌ 間違ったパターン
+export async function GET(req, res) {
+  // Express スタイルは使わない
+}
+\`\`\`
+```
+
+### 原則3：構造化された記述
+
+GEMINI.md は以下のセクション構成が効果的です：
+
+```markdown
+# プロジェクト概要
+3〜4文でプロジェクトの目的を説明
+
+# 技術スタック
+- フレームワーク: Next.js 15 (App Router)
+- 言語: TypeScript (strict mode)
+- テスト: Vitest + Testing Library
+
+# ディレクトリ構成
+- src/app/ — ルーティング
+- src/components/ — 再利用可能なUIコンポーネント
+- src/lib/ — ビジネスロジック・ユーティリティ
+
+# コーディング規約
+（スタイル、命名規則、パターン）
+
+# テスト方針
+（テストの書き方、カバレッジ目標）
+```
+
+### 原則4：単一責任原則（SRP）
+
+ルールファイルは小さく、スコープを絞るのが理想です。一つのファイルに大量のルールを詰め込むと、コンテキストの無駄遣いになります。
+
+<Aside type="caution">
+巨大な GEMINI.md は、すべての会話でそのトークンが消費されます。不要な情報は Skills に分離し、必要なときだけ読み込む方が効率的です。
+</Aside>
+
+## ユーザー設定ルール（GUI経由）
+
+ファイルベースのルール以外に、Antigravityは**IDE設定画面**からもルールを定義できます。これはシステムプロンプトの `<user_rules>` セクションとして会話に注入されます。
+
+現在の会話のシステムプロンプトで「The user has not defined any custom rules.」と表示されている場合、カスタムルールは未設定です。
+
+## 他ツールとの比較
+
+<Tabs>
+  <TabItem label="Antigravity">
+    ```
+    GEMINI.md（階層型）
+    ├── ~/.gemini/GEMINI.md        ← グローバル
+    ├── ./GEMINI.md                ← プロジェクト
+    └── ./src/module/GEMINI.md     ← ディレクトリ
+    ```
+    **特徴**: 自動読み込み、階層型上書き、Gitコミット可能
+  </TabItem>
+  <TabItem label="Cursor">
+    ```
+    .cursorrules（レガシー・単一ファイル）
+    .cursor/rules/*.mdc（新方式・パターンベース）
+    ```
+    **特徴**: `.mdc` ファイルでファイルパターンに基づく条件付きルール適用が可能。
+    例：`*.test.ts` にマッチするファイルを編集するときだけ特定ルールを適用。
+  </TabItem>
+  <TabItem label="Claude Code">
+    ```
+    CLAUDE.md（階層型）
+    ├── ~/.claude/CLAUDE.md        ← グローバル
+    ├── ./CLAUDE.md                ← プロジェクト
+    ├── ./src/CLAUDE.md            ← サブディレクトリ
+    └── ./CLAUDE.local.md          ← ローカル（.gitignore用）
+    ```
+    **特徴**: `CLAUDE.local.md` で個人設定を分離可能。階層構造はAntigravityと酷似。
+  </TabItem>
+</Tabs>
+
+### 共通点と差分
+
+| 機能 | Antigravity | Cursor | Claude Code |
+|---|---|---|---|
+| 階層型ルール | ✅ | ❌（パターンベース） | ✅ |
+| 条件付き適用 | ❌ | ✅（`.mdc`のglob） | ❌ |
+| ローカル専用ファイル | ❌ | ❌ | ✅（`.local.md`） |
+| 自動読み込み | ✅ | ✅ | ✅ |
+
+## この章のまとめ
+
+- Rules は GEMINI.md ファイルで定義し、3階層（グローバル/プロジェクト/ディレクトリ）で管理
+- 否定制約と具体例を活用すると効果的
+- ルールは小さく保ち、大きくなったら Skills に分離する
+- Cursor の `.mdc` パターン、Claude Code の `CLAUDE.local.md` はそれぞれ独自の利点がある

@@ -1,0 +1,196 @@
+---
+title: "Skills — 必要なときだけ読み込む専門知識"
+description: AntigravityのSkillsシステムの仕組み、5つのパターン、そしてPluginsとの関係を理解する。
+---
+
+import { Aside, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Skills とは
+
+**Skills（スキル）**は、Antigravityのエージェントに**特定のタスクに必要な専門知識**を提供するモジュラーなシステムです。
+
+Rules が「常にロードされる基本ルール」であるのに対し、Skills は「**必要なときだけ読み込まれる専門知識**」です。この設計原則を **Progressive Disclosure（段階的開示）** と呼びます。
+
+### なぜ Skillsが必要なのか
+
+```
+❌ すべてをRulesに詰め込む場合：
+  → 毎回大量のトークンが消費される
+  → 関係ない情報がノイズになる
+  → コンテキスト飽和のリスク
+
+✅ Skillsで分離する場合：
+  → 必要なときだけロード（トークン節約）
+  → 関連性の高い情報だけがコンテキストに入る
+  → 無制限にスキルを追加できる
+```
+
+## SKILL.md の構造
+
+すべてのSkillはフォルダとして管理され、その中に**`SKILL.md`**ファイルが必須です。
+
+```
+skills/
+└── my-custom-skill/
+    ├── SKILL.md          ← 必須：説明と指示
+    ├── scripts/          ← オプション：実行スクリプト
+    ├── examples/         ← オプション：サンプルコード
+    └── resources/        ← オプション：テンプレート等
+```
+
+`SKILL.md` のフォーマット：
+
+```markdown
+---
+name: my-custom-skill
+description: このスキルの簡潔な説明（エージェントがスキャンする）
+---
+
+## 使用条件
+このスキルは〇〇の場合に使用してください。
+
+## 手順
+1. まず〇〇を確認する
+2. 次に△△を実行する
+3. 最後に□□を検証する
+
+## 注意事項
+- ××は避けてください
+- △△の場合は例外的に〇〇を使用してください
+```
+
+<Aside type="note">
+YAML フロントマターの `name` と `description` は**メタデータスキャン**で使われます。エージェントはまずこの軽量な情報を読み、関連性がある場合にのみ `SKILL.md` の本文を読み込みます。
+</Aside>
+
+## 5つのスキルパターン
+
+Skillsは目的と複雑さによって5つのパターンに分類されます：
+
+<CardGrid>
+  <Card title="① Router パターン" icon="right-arrow">
+    **最もシンプル。** `SKILL.md` のみで構成。指示やルーティングロジックを記述する。
+    
+    使用例：「テスト関連のタスクはこの手順で進めてください」
+  </Card>
+  <Card title="② Reference パターン" icon="document">
+    **ドキュメント付き。** スタイルガイド、ADR（Architecture Decision Records）、テンプレートなどを `resources/` に同梱。
+    
+    使用例：「APIドキュメントのテンプレートに従ってください」
+  </Card>
+  <Card title="③ Example パターン" icon="puzzle">
+    **サンプルコード付き。** 成功した過去の実装パターンを `examples/` に含める。
+    
+    使用例：「このコンポーネントパターンを参考にしてください」
+  </Card>
+  <Card title="④ Tool Use パターン" icon="setting">
+    **実行可能スクリプト付き。** Python/Bashスクリプトを `scripts/` に含め、エージェントが実行できる。
+    
+    使用例：「このスクリプトを実行してDB状態を確認してください」
+  </Card>
+  <Card title="⑤ All-in-One パターン" icon="star">
+    **包括的。** 上記4パターンのすべてを統合した、複雑なワークフロー向けスキル。
+    
+    使用例：「セキュリティ監査を実施してください（手順・ツール・レポートテンプレート付き）」
+  </Card>
+</CardGrid>
+
+## スキルの読み込みフロー
+
+```
+ユーザーのリクエスト
+       │
+       ▼
+┌──────────────────┐
+│ メタデータスキャン  │  ← name + description のみ読む（軽量）
+│ 全スキル一覧を確認  │
+└──────┬───────────┘
+       │
+       ▼  関連スキルを特定
+┌──────────────────┐
+│ SKILL.md 全文ロード │  ← 関連スキルの本文を読み込む
+│ + 付属リソース      │
+└──────┬───────────┘
+       │
+       ▼  指示に従って実行
+┌──────────────────┐
+│ タスク実行         │  ← スキルの手順を適用
+└──────────────────┘
+```
+
+この2段階ロードにより、大量のスキルをインストールしても**コンテキストウィンドウを圧迫しません**。
+
+## Plugins との関係
+
+**Plugins（プラグイン）**は、Skillsの上位概念で、以下をバンドルしたパッケージです：
+
+```
+plugins/
+└── my-plugin/
+    ├── plugin.json       ← メタデータ
+    ├── skills/           ← 1つ以上のSkills
+    │   ├── skill-a/
+    │   │   └── SKILL.md
+    │   └── skill-b/
+    │       └── SKILL.md
+    └── agents/           ← サブエージェント定義
+        └── specialist/
+```
+
+| 概念 | 粒度 | 内容 |
+|---|---|---|
+| **Skill** | 単体 | 1つのタスクに対する知識・手順 |
+| **Plugin** | バンドル | 複数のSkills + Subagents + 設定 |
+
+<Aside type="tip">
+Skillsは「一人の専門家の知識」、Pluginsは「専門チーム」と考えるとわかりやすいです。
+</Aside>
+
+## スキルの発動方法
+
+Antigravityでは、スキルは主に以下の方法で発動されます：
+
+1. **自動検出**: エージェントがタスクの内容からスキルの関連性を判定し、自動的にロード
+2. **明示的指定**: チャットで `@skill-name` のようにメンションして発動
+3. **ルールからの参照**: GEMINI.md 内でスキルの使用を指示
+
+## Skills vs MCP：使い分け
+
+| 観点 | Skills | MCP (Model Context Protocol) |
+|---|---|---|
+| **対象** | 内部知識・手順・パターン | 外部ツール・API・サービス |
+| **レイテンシ** | ほぼゼロ（ローカルファイル） | ネットワーク遅延あり |
+| **実行形態** | テキストベースの指示 | ツール呼び出し（関数実行） |
+| **用途例** | コーディングパターン、テスト手順 | Slack通知、DB操作、Git操作 |
+
+## 他ツールとの比較
+
+<Tabs>
+  <TabItem label="Antigravity">
+    **Skills + Plugins システム**
+    - フォルダベースの構造（`SKILL.md`）
+    - 段階的開示（メタデータ → 全文）
+    - コミュニティスキルの導入が可能
+    - Plugins でバンドル化
+  </TabItem>
+  <TabItem label="Cursor">
+    **同等機能なし**
+    - Cursorにはスキルに相当する概念がない
+    - `.mdc` ルールで部分的にカバー可能
+    - 外部知識は手動で `@Docs` で参照
+  </TabItem>
+  <TabItem label="Claude Code">
+    **Custom Slash Commands**
+    - `.claude/commands/` にMarkdownファイルを配置
+    - スラッシュコマンドで発動
+    - Skillsほどの構造化はなし（単一ファイル）
+  </TabItem>
+</Tabs>
+
+## この章のまとめ
+
+- Skills は Progressive Disclosure の原則に基づいた、オンデマンドの知識ロードシステム
+- 5つのパターン（Router / Reference / Example / Tool Use / All-in-One）がある
+- メタデータスキャン → 全文ロードの2段階で効率的にコンテキストを使用
+- Plugins は Skills の上位バンドル概念
+- MCP は外部ツール接続であり、Skills（内部知識）とは補完関係

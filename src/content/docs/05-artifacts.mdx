@@ -1,0 +1,237 @@
+---
+title: "Artifacts — 信頼のギャップを埋める作業記録"
+description: Antigravityの3つの主要Artifact（計画書・タスク・ウォークスルー）とPlanning Modeのワークフローを理解する。
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Artifacts とは
+
+**Artifacts（アーティファクト）**は、エージェントの作業を**検証可能な構造化ドキュメント**として一点に集約する仕組みです。
+
+AIエージェントが複雑なタスクを実行するとき、「本当に意図通りに動いているのか？」という**信頼のギャップ（Trust Gap）**が生まれます。Artifactsはこのギャップを埋めるために設計されました。
+
+```
+従来のAIアシスタント:
+  ユーザー → 指示 → AI → コード出力
+  （途中経過がブラックボックス）
+
+Antigravity:
+  ユーザー → 指示 → AI → 計画書 → レビュー → 承認 → 実行 → 完了報告
+  （各段階が検証可能なドキュメント）
+```
+
+## 3つの主要 Artifact
+
+### 1. Implementation Plan（実装計画書）
+
+**ファイル**: `implementation_plan.md`
+
+エージェントがタスクに着手する前に作成する**技術設計書**。
+
+```markdown
+# [目標の説明]
+
+問題の背景、文脈、変更の目的を簡潔に説明。
+
+## User Review Required
+ユーザーのレビューが必要な事項。破壊的変更や重要な設計決定。
+
+## Proposed Changes
+### [コンポーネント名]
+#### [MODIFY] ファイル名
+#### [NEW] 新規ファイル名  
+#### [DELETE] 削除ファイル名
+
+## Open Questions
+実装に影響する未決定事項。
+
+## Verification Plan
+### Automated Tests
+### Manual Verification
+```
+
+<Aside type="note">
+Implementation Planは**承認フロー付き**です。ユーザーの明示的な承認を得てから実行に移ります。計画段階でのずれを早期に修正できる最も効率的なチェックポイントです。
+</Aside>
+
+### 2. Task（タスクリスト）
+
+**ファイル**: `task.md`
+
+承認後に作成される**TODO管理ドキュメント**。進捗をリアルタイムで追跡します。
+
+```markdown
+# タスク管理
+
+## セットアップ
+- [x] 依存関係のインストール
+- [x] 設定ファイルの更新
+
+## 実装
+- [/] APIエンドポイントの作成    ← 作業中
+- [ ] フロントエンドの統合
+- [ ] エラーハンドリング
+
+## 検証
+- [ ] ユニットテスト
+- [ ] E2Eテスト
+```
+
+| 記号 | 意味 |
+|---|---|
+| `[ ]` | 未着手 |
+| `[/]` | 作業中 |
+| `[x]` | 完了 |
+
+### 3. Walkthrough（ウォークスルー）
+
+**ファイル**: `walkthrough.md`
+
+タスク完了後に生成される**変更サマリ＋検証結果レポート**。
+
+```markdown
+# ウォークスルー
+
+## 変更内容
+- APIルートを3つ追加
+- 認証ミドルウェアを実装
+- テストカバレッジを85%に向上
+
+## テスト結果
+（テストの実行結果の引用）
+
+## 検証結果
+（スクリーンショット、ブラウザ録画の埋め込み）
+```
+
+## Planning Mode のワークフロー
+
+Antigravityは複雑なタスクに対して**5段階のワークフロー**を実行します：
+
+<Steps>
+1. **Research（調査）**
+   
+   コードベース、依存関係、影響範囲を調査。**この段階ではソースコードの変更は行わない。**
+
+2. **Create Implementation Plan（計画策定）**
+   
+   調査結果に基づいて `implementation_plan.md` を作成。未決定事項やレビューが必要な点を明記。
+
+3. **Obtain User Approval（承認取得）**
+   
+   ユーザーに計画を提示し、**明示的な承認を待つ**。質問があれば回答後に停止。
+
+4. **Execute（実行）**
+   
+   承認後、`task.md` を作成して進捗を追跡しながらコードを実装。重大な問題を発見した場合は計画を更新して再承認を要求。
+
+5. **Verify（検証）**
+   
+   テスト実行、ビルド確認、`walkthrough.md` の作成で完了を報告。
+</Steps>
+
+```
+      ┌─────────┐
+      │ Research │ ← コード変更なし
+      └────┬────┘
+           ▼
+      ┌─────────┐
+      │  Plan   │ ← implementation_plan.md
+      └────┬────┘
+           ▼
+      ┌─────────┐
+      │ Approve │ ← ユーザーの承認待ち
+      └────┬────┘
+           ▼
+      ┌─────────┐
+      │ Execute │ ← task.md で進捗管理
+      └────┬────┘
+           ▼
+      ┌─────────┐
+      │ Verify  │ ← walkthrough.md で報告
+      └─────────┘
+```
+
+<Aside type="tip">
+すべてのタスクがPlanning Modeを必要とするわけではありません。「ファイルの整形」「コメントの追加」「構文エラーの修正」などの**トリビアルなタスク**は、計画なしで即実行されます。
+</Aside>
+
+## Artifact のフォーマット機能
+
+Artifactは標準のMarkdownに加えて、以下のリッチフォーマットをサポートします：
+
+### GitHub Alerts
+
+```markdown
+> [!NOTE]
+> 背景情報や実装の詳細
+
+> [!WARNING]
+> 破壊的変更や互換性の問題
+
+> [!CAUTION]
+> データ損失やセキュリティリスク
+```
+
+### Mermaid Diagrams
+
+コード変更の依存関係やアーキテクチャを視覚化。
+
+### Carousels
+
+複数の関連スクリーンショットやコードブロックを順次表示。
+
+### Diff ブロック
+
+```diff
+-old_function_name()
++new_function_name()
+ unchanged_line()
+```
+
+### File Links
+
+ファイルへのリンクや特定の行範囲への参照が可能。
+
+## ファイルシステム上の保存場所
+
+Artifactsは会話ごとに独自のディレクトリに保存されます：
+
+```
+~/.gemini/antigravity/brain/
+└── <conversation-id>/
+    ├── implementation_plan.md   ← 計画書
+    ├── task.md                  ← タスクリスト
+    ├── walkthrough.md           ← ウォークスルー
+    ├── .system_generated/
+    │   └── logs/
+    │       └── overview.txt     ← 会話ログ
+    └── （その他のArtifactファイル）
+```
+
+<Aside type="note">
+現在の会話のArtifactsは `~/.gemini/antigravity/brain/47647eec-0c31-4d71-a682-175a0dd38d05/` に保存されています。まさにこの学習ガイドの `implementation_plan.md` と `task.md` もここにあります！
+</Aside>
+
+## 他ツールとの比較
+
+| 機能 | Antigravity | Cursor | Claude Code |
+|---|---|---|---|
+| 構造化された計画書 | ✅ Implementation Plan | ❌ | ❌ |
+| タスク管理 | ✅ task.md | ❌ | ❌（`todowrite` ツールあり） |
+| 完了レポート | ✅ Walkthrough | ❌ | ❌ |
+| 承認フロー | ✅ Planning Mode | ❌ | ▲（`--allowedTools` で制限可能） |
+| ビジュアル検証 | ✅ スクリーンショット・録画 | ❌ | ❌ |
+
+<Aside type="tip">
+Artifactsは Antigravity の「透明性」を支える根幹機能です。エージェントが何をしようとしているか、何をしたかが常にドキュメントとして残るため、複雑なタスクでも安心して委任できます。
+</Aside>
+
+## この章のまとめ
+
+- Artifactsは信頼のギャップを埋める構造化されたドキュメントシステム
+- 3つの主要Artifact：Implementation Plan / Task / Walkthrough
+- Planning Modeは5段階：Research → Plan → Approve → Execute → Verify
+- すべてのArtifactは `brain/<conversation-id>/` に永続保存される
+- リッチなフォーマット（Alerts, Mermaid, Diffs等）で読みやすく構造化
